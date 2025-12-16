@@ -52,6 +52,7 @@ export default function SearchLogseq() {
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initialGraph, setInitialGraph] = useState<string | null>(null);
+  const [firstGraph, setFirstGraph] = useState<string | null>(null);
 
   // Fetch available graphs from server
   useEffect(() => {
@@ -99,6 +100,10 @@ export default function SearchLogseq() {
           graphToUse = graphNames[0];
         }
         
+        // Store the first graph to detect Dropdown initialization calls
+        console.log(`[DEBUG] fetchGraphs: Setting firstGraph="${graphNames[0]}"`);
+        setFirstGraph(graphNames[0]);
+        
         console.log(`[DEBUG] fetchGraphs: Setting initialGraph="${graphToUse}", selectedGraph="${graphToUse}"`);
         // Store the initial graph value to prevent onChange from firing for the same value
         setInitialGraph(graphToUse);
@@ -125,11 +130,18 @@ export default function SearchLogseq() {
 
   // Handle graph selection change
   async function handleGraphChange(newGraph: string) {
-    console.log(`[DEBUG] handleGraphChange START: newGraph="${newGraph}", current selectedGraph="${selectedGraph}", isInitialized=${isInitialized}, initialGraph="${initialGraph}"`);
+    console.log(`[DEBUG] handleGraphChange START: newGraph="${newGraph}", current selectedGraph="${selectedGraph}", isInitialized=${isInitialized}, initialGraph="${initialGraph}", firstGraph="${firstGraph}"`);
     
     // If this is trying to set the initial graph value during initialization, ignore it
     if (!isInitialized && newGraph === initialGraph) {
       console.log(`[DEBUG] handleGraphChange: IGNORING - initialization call with initial value`);
+      return;
+    }
+    
+    // If this is trying to set the first graph when we already have a different selection, ignore it
+    // This handles the case where Dropdown calls onChange with first graph during render
+    if (isInitialized && newGraph === firstGraph && selectedGraph !== firstGraph) {
+      console.log(`[DEBUG] handleGraphChange: IGNORING - Dropdown trying to set first graph "${firstGraph}" but we have "${selectedGraph}"`);
       return;
     }
     
@@ -169,6 +181,10 @@ export default function SearchLogseq() {
   useEffect(() => {
     console.log(`[DEBUG] initialGraph CHANGED: "${initialGraph}", isInitialized=${isInitialized}, selectedGraph="${selectedGraph}"`);
   }, [initialGraph]);
+
+  useEffect(() => {
+    console.log(`[DEBUG] firstGraph CHANGED: "${firstGraph}", isInitialized=${isInitialized}, selectedGraph="${selectedGraph}"`);
+  }, [firstGraph]);
 
   // Search functionality
   useEffect(() => {
