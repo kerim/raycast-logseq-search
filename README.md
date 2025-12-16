@@ -245,6 +245,28 @@ Contributions are welcome! Please:
 - **[logseq-http-server](https://github.com/kerim/logseq-http-server)** - HTTP API server for Logseq CLI (required dependency)
 - **[logseq-db-sidekick](https://github.com/kerim/logseq-db-sidekick)** - Browser extension for Logseq search
 
+## Changelog
+
+### v1.1.0 (2025-XX-XX)
+
+**Fixed:**
+- **Graph Selection Persistence**: Fixed issue where saved graph selection was reset to first graph on extension reload
+- The `List.Dropdown` component was calling `onChange` with the first graph during initialization
+- Added robust detection to ignore spurious Dropdown initialization calls while preserving user selections
+
+**Technical Details:**
+- Added `firstGraph` state to track the first graph in the list
+- Enhanced `handleGraphChange` with logic to detect and ignore Dropdown initialization calls
+- Maintains backward compatibility and all existing functionality
+
+### v1.0.0 (Initial Release)
+
+Initial release with core functionality:
+- Real-time search across Logseq DB graphs
+- Graph selection dropdown with automatic detection
+- Deep linking to Logseq using `logseq://` URLs
+- Configurable server URL and max results
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details
