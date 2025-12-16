@@ -84,15 +84,20 @@ export default function SearchLogseq() {
 
         // Load saved graph selection from LocalStorage
         const savedGraph = await LocalStorage.getItem<string>(STORAGE_KEY);
+        console.log("[Logseq Search] Saved graph from storage:", savedGraph);
+        console.log("[Logseq Search] Available graphs:", graphNames);
 
         if (savedGraph && graphNames.includes(savedGraph)) {
+          console.log("[Logseq Search] Using saved graph:", savedGraph);
           setSelectedGraph(savedGraph);
         } else if (preferences.graphName && graphNames.includes(preferences.graphName)) {
           // Fallback to preference if set
+          console.log("[Logseq Search] Using preference graph:", preferences.graphName);
           setSelectedGraph(preferences.graphName);
           await LocalStorage.setItem(STORAGE_KEY, preferences.graphName);
         } else if (graphNames.length > 0) {
           // Default to first graph
+          console.log("[Logseq Search] Defaulting to first graph:", graphNames[0]);
           setSelectedGraph(graphNames[0]);
           await LocalStorage.setItem(STORAGE_KEY, graphNames[0]);
         }
@@ -120,8 +125,10 @@ export default function SearchLogseq() {
 
   // Handle graph selection change
   async function handleGraphChange(newGraph: string) {
+    console.log("[Logseq Search] Graph changed to:", newGraph);
     setSelectedGraph(newGraph);
     await LocalStorage.setItem(STORAGE_KEY, newGraph);
+    console.log("[Logseq Search] Saved graph to storage:", newGraph);
     // Clear results when changing graphs
     setResults([]);
     setSearchText("");
@@ -195,7 +202,9 @@ export default function SearchLogseq() {
 
   const openInLogseq = (page: LogseqPage) => {
     const uuid = page["block/uuid"];
-    const url = `logseq://graph/${selectedGraph}?block-id=${uuid}`;
+    // Encode graph name to handle spaces and special characters
+    const encodedGraph = encodeURIComponent(selectedGraph);
+    const url = `logseq://graph/${encodedGraph}?block-id=${uuid}`;
     return url;
   };
 
