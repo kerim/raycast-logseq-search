@@ -51,6 +51,7 @@ export default function SearchLogseq() {
   const [availableGraphs, setAvailableGraphs] = useState<string[]>([]);
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initialGraph, setInitialGraph] = useState<string | null>(null);
 
   // Fetch available graphs from server
   useEffect(() => {
@@ -86,16 +87,24 @@ export default function SearchLogseq() {
         // Load saved graph selection from LocalStorage
         const savedGraph = await LocalStorage.getItem<string>(STORAGE_KEY);
 
+        let graphToUse = "";
         if (savedGraph && graphNames.includes(savedGraph)) {
           // Use saved graph from previous session
-          setSelectedGraph(savedGraph);
+          console.log(`[DEBUG] fetchGraphs: Using saved graph: "${savedGraph}"`);
+          graphToUse = savedGraph;
         } else if (graphNames.length > 0) {
           // No saved selection - default to first graph but DON'T save it
           // Only save when user explicitly selects from dropdown
-          setSelectedGraph(graphNames[0]);
+          console.log(`[DEBUG] fetchGraphs: Using default graph: "${graphNames[0]}"`);
+          graphToUse = graphNames[0];
         }
         
+        // Store the initial graph value to prevent onChange from firing for the same value
+        setInitialGraph(graphToUse);
+        setSelectedGraph(graphToUse);
+        
         // Mark initialization as complete
+        console.log(`[DEBUG] fetchGraphs: Setting isInitialized to true, initialGraph="${graphToUse}"`);
         setIsInitialized(true);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
@@ -115,11 +124,22 @@ export default function SearchLogseq() {
 
   // Handle graph selection change
   async function handleGraphChange(newGraph: string) {
+    console.log(`[DEBUG] handleGraphChange: newGraph="${newGraph}", isInitialized=${isInitialized}, initialGraph="${initialGraph}"`);
+    
+    // If this is trying to set the initial graph value during initialization, ignore it
+    if (!isInitialized && newGraph === initialGraph) {
+      console.log(`[DEBUG] handleGraphChange: Ignoring initial setup call for "${newGraph}"`);
+      return;
+    }
+    
     setSelectedGraph(newGraph);
     
     // Only save to LocalStorage if component is initialized (not during initial setup)
     if (isInitialized) {
+      console.log(`[DEBUG] handleGraphChange: Saving "${newGraph}" to LocalStorage`);
       await LocalStorage.setItem(STORAGE_KEY, newGraph);
+    } else {
+      console.log(`[DEBUG] handleGraphChange: Skipping save - not initialized yet`);
     }
     
     // Clear results when changing graphs
