@@ -86,23 +86,16 @@ export default function SearchLogseq() {
         const savedGraph = await LocalStorage.getItem<string>(STORAGE_KEY);
 
         if (savedGraph && graphNames.includes(savedGraph)) {
+          // Use saved graph from previous session
           setSelectedGraph(savedGraph);
           await showToast({
             style: Toast.Style.Success,
             title: `Loaded saved graph: ${savedGraph}`,
           });
-        } else if (preferences.graphName && graphNames.includes(preferences.graphName)) {
-          // Fallback to preference if set
-          setSelectedGraph(preferences.graphName);
-          await LocalStorage.setItem(STORAGE_KEY, preferences.graphName);
-          await showToast({
-            style: Toast.Style.Success,
-            title: `Using preference: ${preferences.graphName}`,
-          });
         } else if (graphNames.length > 0) {
-          // Default to first graph
+          // No saved selection - default to first graph but DON'T save it
+          // Only save when user explicitly selects from dropdown
           setSelectedGraph(graphNames[0]);
-          await LocalStorage.setItem(STORAGE_KEY, graphNames[0]);
           await showToast({
             style: Toast.Style.Success,
             title: `Defaulting to: ${graphNames[0]}`,
@@ -116,19 +109,13 @@ export default function SearchLogseq() {
         } else {
           setError(`Failed to load graphs: ${errorMessage}`);
         }
-
-        // Fallback to preference if server is not available
-        if (preferences.graphName) {
-          setSelectedGraph(preferences.graphName);
-          setAvailableGraphs([preferences.graphName]);
-        }
       } finally {
         setIsLoadingGraphs(false);
       }
     }
 
     fetchGraphs();
-  }, [preferences.serverUrl, preferences.graphName]);
+  }, [preferences.serverUrl]);
 
   // Handle graph selection change
   async function handleGraphChange(newGraph: string) {
