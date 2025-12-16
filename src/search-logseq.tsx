@@ -84,22 +84,20 @@ export default function SearchLogseq() {
 
         // Load saved graph selection from LocalStorage
         const savedGraph = await LocalStorage.getItem<string>(STORAGE_KEY);
+        console.log("[DEBUG] Available graphs:", graphNames);
+        console.log("[DEBUG] Saved graph from LocalStorage:", savedGraph);
+        console.log("[DEBUG] savedGraph exists?", !!savedGraph);
+        console.log("[DEBUG] graphNames includes savedGraph?", graphNames.includes(savedGraph || ""));
 
         if (savedGraph && graphNames.includes(savedGraph)) {
           // Use saved graph from previous session
+          console.log("[DEBUG] USING SAVED GRAPH:", savedGraph);
           setSelectedGraph(savedGraph);
-          await showToast({
-            style: Toast.Style.Success,
-            title: `Loaded saved graph: ${savedGraph}`,
-          });
         } else if (graphNames.length > 0) {
           // No saved selection - default to first graph but DON'T save it
           // Only save when user explicitly selects from dropdown
+          console.log("[DEBUG] DEFAULTING TO FIRST GRAPH:", graphNames[0]);
           setSelectedGraph(graphNames[0]);
-          await showToast({
-            style: Toast.Style.Success,
-            title: `Defaulting to: ${graphNames[0]}`,
-          });
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
@@ -119,12 +117,13 @@ export default function SearchLogseq() {
 
   // Handle graph selection change
   async function handleGraphChange(newGraph: string) {
+    console.log("[DEBUG] handleGraphChange called with:", newGraph);
     setSelectedGraph(newGraph);
     await LocalStorage.setItem(STORAGE_KEY, newGraph);
-    await showToast({
-      style: Toast.Style.Success,
-      title: `Graph saved: ${newGraph}`,
-    });
+    console.log("[DEBUG] Saved to LocalStorage:", newGraph);
+    // Verify it was saved
+    const verify = await LocalStorage.getItem<string>(STORAGE_KEY);
+    console.log("[DEBUG] Verified saved value:", verify);
     // Clear results when changing graphs
     setResults([]);
     setSearchText("");
