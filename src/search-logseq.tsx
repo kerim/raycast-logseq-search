@@ -194,8 +194,8 @@ export default function SearchLogseq() {
   }, [searchText, selectedGraph, preferences.serverUrl, preferences.maxResults]);
 
   const openInLogseq = (page: LogseqPage) => {
-    const pageName = page["block/name"];
-    const url = `logseq://graph/${selectedGraph}?page=${encodeURIComponent(pageName)}`;
+    const uuid = page["block/uuid"];
+    const url = `logseq://graph/${selectedGraph}?block-id=${uuid}`;
     return url;
   };
 
