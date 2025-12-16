@@ -91,26 +91,21 @@ export default function SearchLogseq() {
         let graphToUse = "";
         if (savedGraph && graphNames.includes(savedGraph)) {
           // Use saved graph from previous session
-          console.log(`[DEBUG] fetchGraphs: Found saved graph "${savedGraph}" in available graphs`);
           graphToUse = savedGraph;
         } else if (graphNames.length > 0) {
           // No saved selection - default to first graph but DON'T save it
           // Only save when user explicitly selects from dropdown
-          console.log(`[DEBUG] fetchGraphs: No saved graph or not in list, using first graph "${graphNames[0]}"`);
           graphToUse = graphNames[0];
         }
         
         // Store the first graph to detect Dropdown initialization calls
-        console.log(`[DEBUG] fetchGraphs: Setting firstGraph="${graphNames[0]}"`);
         setFirstGraph(graphNames[0]);
         
-        console.log(`[DEBUG] fetchGraphs: Setting initialGraph="${graphToUse}", selectedGraph="${graphToUse}"`);
         // Store the initial graph value to prevent onChange from firing for the same value
         setInitialGraph(graphToUse);
         setSelectedGraph(graphToUse);
         
         // Mark initialization as complete
-        console.log(`[DEBUG] fetchGraphs: Setting isInitialized=true`);
         setIsInitialized(true);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
@@ -130,61 +125,30 @@ export default function SearchLogseq() {
 
   // Handle graph selection change
   async function handleGraphChange(newGraph: string) {
-    console.log(`[DEBUG] handleGraphChange START: newGraph="${newGraph}", current selectedGraph="${selectedGraph}", isInitialized=${isInitialized}, initialGraph="${initialGraph}", firstGraph="${firstGraph}"`);
-    
     // If this is trying to set the initial graph value during initialization, ignore it
     if (!isInitialized && newGraph === initialGraph) {
-      console.log(`[DEBUG] handleGraphChange: IGNORING - initialization call with initial value`);
       return;
     }
     
     // If this is trying to set the first graph when we already have a different selection, ignore it
     // This handles the case where Dropdown calls onChange with first graph during render
     if (isInitialized && newGraph === firstGraph && selectedGraph !== firstGraph) {
-      console.log(`[DEBUG] handleGraphChange: IGNORING - Dropdown trying to set first graph "${firstGraph}" but we have "${selectedGraph}"`);
       return;
     }
     
-    console.log(`[DEBUG] handleGraphChange: PROCESSING - setting selectedGraph to "${newGraph}"`);
     setSelectedGraph(newGraph);
     
     // Only save to LocalStorage if component is initialized (not during initial setup)
     if (isInitialized) {
-      console.log(`[DEBUG] handleGraphChange: SAVING to LocalStorage`);
       await LocalStorage.setItem(STORAGE_KEY, newGraph);
-      const verify = await LocalStorage.getItem<string>(STORAGE_KEY);
-      console.log(`[DEBUG] handleGraphChange: VERIFIED LocalStorage value: "${verify}"`);
-    } else {
-      console.log(`[DEBUG] handleGraphChange: SKIPPING save - not initialized`);
     }
     
     // Clear results when changing graphs
-    console.log(`[DEBUG] handleGraphChange: CLEARING results and search text`);
     setResults([]);
     setSearchText("");
-    console.log(`[DEBUG] handleGraphChange END`);
   }
 
-  // Debug: Track component lifecycle and state changes
-  useEffect(() => {
-    console.log(`[DEBUG] COMPONENT MOUNTED: selectedGraph="${selectedGraph}", isInitialized=${isInitialized}, initialGraph="${initialGraph}"`);
-  }, []);
 
-  useEffect(() => {
-    console.log(`[DEBUG] selectedGraph CHANGED: "${selectedGraph}", isInitialized=${isInitialized}, initialGraph="${initialGraph}"`);
-  }, [selectedGraph]);
-
-  useEffect(() => {
-    console.log(`[DEBUG] isInitialized CHANGED: ${isInitialized}, selectedGraph="${selectedGraph}", initialGraph="${initialGraph}"`);
-  }, [isInitialized]);
-
-  useEffect(() => {
-    console.log(`[DEBUG] initialGraph CHANGED: "${initialGraph}", isInitialized=${isInitialized}, selectedGraph="${selectedGraph}"`);
-  }, [initialGraph]);
-
-  useEffect(() => {
-    console.log(`[DEBUG] firstGraph CHANGED: "${firstGraph}", isInitialized=${isInitialized}, selectedGraph="${selectedGraph}"`);
-  }, [firstGraph]);
 
   // Search functionality
   useEffect(() => {
