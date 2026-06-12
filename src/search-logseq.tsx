@@ -330,7 +330,6 @@ export default function SearchLogseq() {
                   title="Open Preferences"
                   onAction={openExtensionPreferences}
                   icon={Icon.Gear}
-                  shortcut={{ modifiers: ["cmd"], key: "," }}
                 />
               </ActionPanel>
             }

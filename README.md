@@ -225,6 +225,11 @@ Contributions are welcome! Please:
 
 ## Changelog
 
+### v1.2.1 (2026-06-12)
+
+**Fixed:**
+- Removed the reserved `Cmd+,` keyboard shortcut from the "Open Preferences" action, which logged a warning on every render (Raycast reserves `Cmd+,`). The action is still available in the action panel.
+
 ### v1.2.0 (2026-06-12)
 
 **Changed:**
