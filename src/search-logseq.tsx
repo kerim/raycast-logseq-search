@@ -9,11 +9,15 @@ import {
   openExtensionPreferences,
   LocalStorage,
 } from "@raycast/api";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { useEffect, useState } from "react";
+
+const execFileAsync = promisify(execFile);
 
 interface Preferences {
   graphName?: string;
-  serverUrl: string;
+  logseqPath?: string;
   maxResults: string;
 }
 
@@ -22,27 +26,20 @@ interface LogseqPage {
   "block/title": string;
   "block/name": string;
   "db/id": number;
-  "block/journal-day"?: number;
-}
-
-interface SearchResponse {
-  success: boolean;
-  data?: LogseqPage[];
-  error?: string;
-  stderr?: string;
-}
-
-interface ListGraphsResponse {
-  success: boolean;
-  stdout?: string;
-  error?: string;
-  stderr?: string;
 }
 
 const STORAGE_KEY = "selected-graph";
 
+function buildEdnQuery(raw: string): string {
+  const needle = raw.toLowerCase().replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  // Exclude journal pages: (not [?p :block/journal-day]) drops any page that has a journal day.
+  return `[:find (pull ?p [:block/uuid :block/title :block/name :db/id]) :where [?p :block/name ?name] [(clojure.string/includes? ?name "${needle}")] (not [?p :block/journal-day])]`;
+}
+
 export default function SearchLogseq() {
   const preferences = getPreferenceValues<Preferences>();
+  const logseqPath =
+    preferences.logseqPath || "/Users/niyaro/.local/bin/logseq";
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<LogseqPage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,34 +51,25 @@ export default function SearchLogseq() {
   const [initialGraph, setInitialGraph] = useState<string | null>(null);
   const [firstGraph, setFirstGraph] = useState<string | null>(null);
 
-  // Fetch available graphs from server
+  // Fetch available graphs from CLI
   useEffect(() => {
     async function fetchGraphs() {
       try {
-        const serverUrl = preferences.serverUrl || "http://localhost:8765";
-        const response = await fetch(`${serverUrl}/list`);
+        const { stdout } = await execFileAsync(
+          logseqPath,
+          ["graph", "list", "--output", "json"],
+          {
+            maxBuffer: 10 * 1024 * 1024,
+          },
+        );
 
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
+        const parsed: any = JSON.parse(stdout);
+
+        if (parsed.status !== "ok") {
+          throw new Error(parsed.error || "logseq graph list failed");
         }
 
-        const data: ListGraphsResponse = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error || "Failed to fetch graphs");
-        }
-
-        // Parse graph names from stdout
-        const lines = (data.stdout || "").split("\n");
-        const graphNames = lines
-          .filter(
-            (line) =>
-              line.trim() &&
-              !line.includes(":") &&
-              line.trim() !== "DB Graphs" &&
-              line.trim() !== "File Graphs"
-          )
-          .map((line) => line.trim());
+        const graphNames: string[] = parsed.data.graphs || [];
 
         setAvailableGraphs(graphNames);
 
@@ -97,21 +85,29 @@ export default function SearchLogseq() {
           // Only save when user explicitly selects from dropdown
           graphToUse = graphNames[0];
         }
-        
+
         // Store the first graph to detect Dropdown initialization calls
         setFirstGraph(graphNames[0]);
-        
+
         // Store the initial graph value to prevent onChange from firing for the same value
         setInitialGraph(graphToUse);
         setSelectedGraph(graphToUse);
-        
+
         // Mark initialization as complete
         setIsInitialized(true);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Unknown error";
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error";
 
-        if (errorMessage.includes("Failed to fetch") || errorMessage.includes("NetworkError")) {
-          setError("Cannot connect to Logseq HTTP server. Make sure it's running.");
+        if (
+          (err instanceof Error &&
+            (err as NodeJS.ErrnoException).code === "ENOENT") ||
+          errorMessage.includes("ENOENT") ||
+          errorMessage.includes("command not found")
+        ) {
+          setError(
+            "Cannot run logseq CLI. Check the binary path in extension preferences.",
+          );
         } else {
           setError(`Failed to load graphs: ${errorMessage}`);
         }
@@ -121,7 +117,7 @@ export default function SearchLogseq() {
     }
 
     fetchGraphs();
-  }, [preferences.serverUrl]);
+  }, [logseqPath]);
 
   // Handle graph selection change
   async function handleGraphChange(newGraph: string) {
@@ -129,26 +125,28 @@ export default function SearchLogseq() {
     if (!isInitialized && newGraph === initialGraph) {
       return;
     }
-    
+
     // If this is trying to set the first graph when we already have a different selection, ignore it
     // This handles the case where Dropdown calls onChange with first graph during render
-    if (isInitialized && newGraph === firstGraph && selectedGraph !== firstGraph) {
+    if (
+      isInitialized &&
+      newGraph === firstGraph &&
+      selectedGraph !== firstGraph
+    ) {
       return;
     }
-    
+
     setSelectedGraph(newGraph);
-    
+
     // Only save to LocalStorage if component is initialized (not during initial setup)
     if (isInitialized) {
       await LocalStorage.setItem(STORAGE_KEY, newGraph);
     }
-    
+
     // Clear results when changing graphs
     setResults([]);
     setSearchText("");
   }
-
-
 
   // Search functionality
   useEffect(() => {
@@ -163,38 +161,54 @@ export default function SearchLogseq() {
       setError(null);
 
       try {
-        const serverUrl = preferences.serverUrl || "http://localhost:8765";
         const maxResults = parseInt(preferences.maxResults || "20");
 
-        const url = `${serverUrl}/search?q=${encodeURIComponent(searchText)}&graph=${encodeURIComponent(
-          selectedGraph
-        )}`;
+        const ednQuery = buildEdnQuery(searchText);
+        const { stdout } = await execFileAsync(
+          logseqPath,
+          [
+            "query",
+            "--graph",
+            selectedGraph,
+            "--query",
+            ednQuery,
+            "--output",
+            "json",
+          ],
+          { maxBuffer: 10 * 1024 * 1024 },
+        );
 
-        const response = await fetch(url);
+        const parsed: any = JSON.parse(stdout);
 
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        if (parsed.status !== "ok") {
+          throw new Error(parsed.error || "logseq query failed");
         }
 
-        const data: SearchResponse = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error || data.stderr || "Search failed");
-        }
+        const rows: LogseqPage[] = (parsed.data?.result || []).map(
+          (row: LogseqPage[]) => row[0],
+        );
 
         // Limit results
-        const pages = (data.data || []).slice(0, maxResults);
+        const pages = rows.slice(0, maxResults);
         setResults(pages);
 
         if (pages.length === 0) {
           setError("No results found");
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error occurred";
 
-        // Check if it's a connection error
-        if (errorMessage.includes("Failed to fetch") || errorMessage.includes("NetworkError")) {
-          setError("Cannot connect to Logseq HTTP server. Make sure it's running.");
+        // Check if it's a missing binary error
+        if (
+          (err instanceof Error &&
+            (err as NodeJS.ErrnoException).code === "ENOENT") ||
+          errorMessage.includes("ENOENT") ||
+          errorMessage.includes("command not found")
+        ) {
+          setError(
+            "Cannot run logseq CLI. Check the binary path in extension preferences.",
+          );
         } else {
           setError(errorMessage);
         }
@@ -214,7 +228,7 @@ export default function SearchLogseq() {
     // Debounce search
     const timeoutId = setTimeout(search, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchText, selectedGraph, preferences.serverUrl, preferences.maxResults]);
+  }, [searchText, selectedGraph, logseqPath, preferences.maxResults]);
 
   const openInLogseq = (page: LogseqPage) => {
     const uuid = page["block/uuid"];
@@ -228,7 +242,9 @@ export default function SearchLogseq() {
     <List
       isLoading={isLoading || isLoadingGraphs}
       onSearchTextChange={setSearchText}
-      searchBarPlaceholder={selectedGraph ? `Search in ${selectedGraph}...` : "Loading graphs..."}
+      searchBarPlaceholder={
+        selectedGraph ? `Search in ${selectedGraph}...` : "Loading graphs..."
+      }
       searchBarAccessory={
         <List.Dropdown
           tooltip="Select Graph"
@@ -239,7 +255,9 @@ export default function SearchLogseq() {
           {availableGraphs.length === 0 ? (
             <List.Dropdown.Item title="No graphs available" value="" />
           ) : (
-            availableGraphs.map((graph) => <List.Dropdown.Item key={graph} title={graph} value={graph} />)
+            availableGraphs.map((graph) => (
+              <List.Dropdown.Item key={graph} title={graph} value={graph} />
+            ))
           )}
         </List.Dropdown>
       }
@@ -252,7 +270,11 @@ export default function SearchLogseq() {
           description={error}
           actions={
             <ActionPanel>
-              <Action title="Open Preferences" onAction={openExtensionPreferences} icon={Icon.Gear} />
+              <Action
+                title="Open Preferences"
+                onAction={openExtensionPreferences}
+                icon={Icon.Gear}
+              />
             </ActionPanel>
           }
         />
@@ -260,7 +282,11 @@ export default function SearchLogseq() {
         <List.EmptyView
           icon={Icon.MagnifyingGlass}
           title="No results found"
-          description={selectedGraph ? `No pages matching "${searchText}" in ${selectedGraph}` : "No graph selected"}
+          description={
+            selectedGraph
+              ? `No pages matching "${searchText}" in ${selectedGraph}`
+              : "No graph selected"
+          }
         />
       ) : !searchText ? (
         <List.EmptyView
@@ -277,16 +303,19 @@ export default function SearchLogseq() {
           <List.Item
             key={page["block/uuid"]}
             title={page["block/title"] || page["block/name"]}
-            subtitle={page["block/name"] !== page["block/title"] ? page["block/name"] : undefined}
-            accessories={[
-              {
-                tag: page["block/journal-day"] ? "Journal" : undefined,
-                icon: page["block/journal-day"] ? Icon.Calendar : Icon.Document,
-              },
-            ]}
+            subtitle={
+              page["block/name"] !== page["block/title"]
+                ? page["block/name"]
+                : undefined
+            }
+            accessories={[{ icon: Icon.Document }]}
             actions={
               <ActionPanel>
-                <Action.OpenInBrowser title="Open in Logseq" url={openInLogseq(page)} icon={Icon.Book} />
+                <Action.OpenInBrowser
+                  title="Open in Logseq"
+                  url={openInLogseq(page)}
+                  icon={Icon.Book}
+                />
                 <Action.CopyToClipboard
                   title="Copy Page Link"
                   content={openInLogseq(page)}

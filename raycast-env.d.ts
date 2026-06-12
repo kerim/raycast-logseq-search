@@ -10,8 +10,8 @@
 type ExtensionPreferences = {
   /** Default Graph Name (Optional) - Default graph name - you can also select from the dropdown in the search interface */
   "graphName"?: string,
-  /** Server URL - URL of the Logseq HTTP server */
-  "serverUrl": string,
+  /** Logseq CLI Path - Full path to the bundled logseq binary (default: ~/.local/bin/logseq) */
+  "logseqPath": string,
   /** Max Results - Maximum number of search results to display */
   "maxResults": string
 }

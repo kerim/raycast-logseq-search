@@ -11,7 +11,7 @@ Search your Logseq DB graphs directly from Raycast.
 - 🔍 **Real-time search** - Search as you type with intelligent debouncing
 - 📊 **Graph selector** - Automatic detection and dropdown selection of available graphs
 - 💾 **Remembers selection** - Your last selected graph is saved between sessions
-- 🚀 **Fast** - Direct HTTP API integration with Logseq
+- 🚀 **Fast** - Direct CLI integration with Logseq
 - 🔗 **Deep linking** - Open pages directly in Logseq
 - 📋 **Quick actions** - Copy page links and titles
 - ⚡ **No Logseq Desktop required** - Works with Logseq CLI and DB graphs
@@ -27,15 +27,13 @@ Search your Logseq DB graphs directly from Raycast.
 
 1. **[Raycast](https://www.raycast.com/)** - Download and install Raycast
 
-2. **[Logseq HTTP Server](https://github.com/kerim/logseq-http-server)** - HTTP server for Logseq CLI
-
-   Follow the installation guide in the [logseq-http-server repository](https://github.com/kerim/logseq-http-server)
+2. **Logseq CLI** - The extension shells out to the bundled `logseq` binary at `~/.local/bin/logseq` (configurable via the Logseq CLI Path preference)
 
 3. **Logseq DB Graph** - The extension works with Logseq DB (database) graphs only
 
    Verify your graphs:
    ```bash
-   logseq list
+   logseq graph list --output json
    ```
 
 ## Installation
@@ -82,19 +80,13 @@ This opens Raycast with the extension loaded in development mode.
 
 ### First Time Setup
 
-1. **Start the Logseq HTTP Server:**
-   ```bash
-   cd /path/to/logseq-http-server
-   python3 logseq_server.py
-   ```
+1. **Open Raycast** (⌘ Space)
 
-2. **Open Raycast** (⌘ Space)
+2. **Search for "Search Logseq"**
 
-3. **Search for "Search Logseq"**
+3. **Select your graph** from the dropdown (top-right)
 
-4. **Select your graph** from the dropdown (top-right)
-
-5. **Start searching!** Your graph selection will be remembered
+4. **Start searching!** Your graph selection will be remembered
 
 ### Daily Use
 
@@ -115,7 +107,7 @@ This opens Raycast with the extension loaded in development mode.
 The extension has minimal configuration needed. All settings are optional:
 
 - **Default Graph Name** - Optional default graph for first launch
-- **Server URL** - HTTP server URL (default: `http://localhost:8765`)
+- **Logseq CLI Path** - Full path to the bundled logseq binary (default: `/Users/niyaro/.local/bin/logseq`)
 - **Max Results** - Maximum search results to display (default: `20`)
 
 Access preferences: Raycast → Extensions → Logseq Search → Configure
@@ -129,67 +121,54 @@ Access preferences: Raycast → Extensions → Logseq Search → Configure
 
 ### External Dependencies
 
-- **[Logseq HTTP Server](https://github.com/kerim/logseq-http-server)** - HTTP API server for Logseq CLI
-- **[Logseq CLI](https://www.npmjs.com/package/@logseq/cli)** - Official Logseq command-line interface
-- **[jet](https://github.com/borkdude/jet)** - EDN to JSON converter (required by HTTP server)
+- **Logseq CLI** - The bundled `logseq` binary (included with Logseq.app), default path `~/.local/bin/logseq`
 
 ## How It Works
 
 ```
 ┌─────────────┐         ┌──────────────────┐         ┌─────────────────┐
-│   Raycast   │ ◄─────► │   This Extension │ ◄─────► │  HTTP Server    │
-│     UI      │  User   │   (TypeScript)   │  REST   │   (Python)      │
-└─────────────┘  Input  └──────────────────┘  API    └─────────────────┘
-                                                              │
-                                                              ▼
-                                                      ┌─────────────────┐
-                                                      │   Logseq CLI    │
-                                                      │   DB Graphs     │
-                                                      └─────────────────┘
+│   Raycast   │ ◄─────► │   This Extension │ ◄─────► │   Logseq CLI    │
+│     UI      │  User   │   (TypeScript)   │  execFile│   DB Graphs     │
+└─────────────┘  Input  └──────────────────┘         └─────────────────┘
 ```
 
-1. Extension fetches available graphs from HTTP server
+1. Extension runs `logseq graph list --output json` to fetch available graphs
 2. User selects graph and types search query
-3. Extension sends search request to HTTP server
-4. HTTP server queries Logseq CLI
-5. Results are displayed in Raycast
-6. User opens page using `logseq://` URL scheme
+3. Extension runs `logseq query --graph <g> --query <edn> --output json`
+4. Results are displayed in Raycast
+5. User opens page using `logseq://` URL scheme
 
-## API Endpoints Used
+## CLI Commands Used
 
-The extension communicates with these HTTP server endpoints:
+The extension runs these two commands:
 
-- `GET /list` - Fetch available Logseq graphs
-- `GET /search?q={query}&graph={graph}` - Search pages in a graph
+- `logseq graph list --output json` - Fetch available Logseq graphs
+- `logseq query --graph <graph> --query <edn> --output json` - Search pages in a graph
 
 ## Troubleshooting
 
-### "Cannot connect to Logseq HTTP server"
+### "Cannot run logseq CLI"
 
-**Cause:** HTTP server is not running
+**Cause:** The `logseq` binary was not found at the configured path
 
 **Solution:**
-```bash
-cd /path/to/logseq-http-server
-python3 logseq_server.py
-```
+1. Check that Logseq.app is installed and the CLI is available at `~/.local/bin/logseq`
+2. If the binary is at a different path, update "Logseq CLI Path" in extension preferences
 
-Verify server is running:
+Verify the binary works:
 ```bash
-curl http://localhost:8765/health
+/Users/niyaro/.local/bin/logseq graph list --output json
 ```
 
 ### "No graphs available" in dropdown
 
 **Possible causes:**
-- HTTP server is not running
+- Incorrect Logseq CLI path in preferences
 - No Logseq DB graphs exist
-- Incorrect server URL in preferences
 
 **Solutions:**
-1. Check server is running: `curl http://localhost:8765/list`
-2. Verify graphs exist: `logseq list`
-3. Check server URL in extension preferences
+1. Verify graphs exist: `logseq graph list --output json`
+2. Check Logseq CLI Path in extension preferences
 
 ### Extension not appearing in Raycast
 
@@ -242,10 +221,15 @@ Contributions are welcome! Please:
 
 ## Related Projects
 
-- **[logseq-http-server](https://github.com/kerim/logseq-http-server)** - HTTP API server for Logseq CLI (required dependency)
 - **[logseq-db-sidekick](https://github.com/kerim/logseq-db-sidekick)** - Browser extension for Logseq search
 
 ## Changelog
+
+### v1.2.0 (2026-06-12)
+
+**Changed:**
+- Migrated from the Python HTTP server to the bundled Logseq CLI (`logseq graph list` / `logseq query`); removed the Server URL preference and added a Logseq CLI Path preference.
+- Search results now exclude journal pages (only named pages are returned).
 
 ### v1.1.0 (2025-XX-XX)
 
@@ -278,5 +262,4 @@ Created by [Kerim Friedman](https://github.com/kerim)
 ## Acknowledgments
 
 - Built with [Raycast API](https://developers.raycast.com/)
-- Uses [Logseq HTTP Server](https://github.com/kerim/logseq-http-server)
-- Powered by [Logseq CLI](https://www.npmjs.com/package/@logseq/cli)
+- Powered by the bundled Logseq CLI

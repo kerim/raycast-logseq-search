@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "logseq-search",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "title": "Logseq Search",
   "description": "Search your Logseq DB graph directly from Raycast",
   "icon": "assets/extension-icon.png",
@@ -29,12 +29,12 @@
       "placeholder": "my-graph"
     },
     {
-      "name": "serverUrl",
-      "title": "Server URL",
-      "description": "URL of the Logseq HTTP server",
+      "name": "logseqPath",
+      "title": "Logseq CLI Path",
+      "description": "Full path to the bundled logseq binary (default: ~/.local/bin/logseq)",
       "type": "textfield",
       "required": false,
-      "default": "http://localhost:8765"
+      "default": "/Users/niyaro/.local/bin/logseq"
     },
     {
       "name": "maxResults",
