@@ -38,7 +38,20 @@ Search your Logseq DB graphs directly from Raycast.
 
 ## Installation
 
-### Option 1: Install from Source
+### Tinycast
+
+Tinycast runs Raycast extensions natively and has no "reload extension" command, so install a local build by copying it in:
+
+```bash
+npm install
+npx ray build -e dist -o build
+mkdir -p ~/Library/Application\ Support/com.abueammar.tinycast/extensions/logseq-search
+cp -R build/assets build/package.json build/search-logseq.js ~/Library/Application\ Support/com.abueammar.tinycast/extensions/logseq-search/
+```
+
+Then quit and reopen Tinycast.
+
+### Option 1: Install from Source (Raycast)
 
 1. Clone this repository:
    ```bash
@@ -106,8 +119,8 @@ This opens Raycast with the extension loaded in development mode.
 
 The extension has minimal configuration needed. All settings are optional:
 
-- **Default Graph Name** - Optional default graph for first launch
-- **Logseq CLI Path** - Full path to the bundled logseq binary (default: `/Users/niyaro/.local/bin/logseq`)
+- **Default Graph Name** - Graph to use the first time; after that the graph last picked in the dropdown is remembered
+- **Logseq CLI Path** - Full path to the bundled logseq binary (default: `~/.local/bin/logseq`)
 - **Max Results** - Maximum search results to display (default: `20`)
 
 Access preferences: Raycast → Extensions → Logseq Search → Configure
@@ -116,8 +129,7 @@ Access preferences: Raycast → Extensions → Logseq Search → Configure
 
 ### Extension Dependencies
 
-- `@raycast/api` (^1.98.2) - Raycast extension API
-- `@raycast/utils` (^1.17.0) - Raycast utilities
+- `@raycast/api` (^2.12.1) - Raycast extension API
 
 ### External Dependencies
 
@@ -147,7 +159,7 @@ The extension runs these two commands:
 
 ## Troubleshooting
 
-### "Cannot run logseq CLI"
+### "Cannot find the Logseq CLI"
 
 **Cause:** The `logseq` binary was not found at the configured path
 
@@ -157,7 +169,7 @@ The extension runs these two commands:
 
 Verify the binary works:
 ```bash
-/Users/niyaro/.local/bin/logseq graph list --output json
+~/.local/bin/logseq graph list --output json
 ```
 
 ### "No graphs available" in dropdown
@@ -224,6 +236,21 @@ Contributions are welcome! Please:
 - **[logseq-db-sidekick](https://github.com/kerim/logseq-db-sidekick)** - Browser extension for Logseq search
 
 ## Changelog
+
+### v1.3.0 (2026-11-17)
+
+**Fixed:**
+- The first graph in the dropdown could not be picked again once another graph was selected.
+- The "Default Graph Name" preference was ignored.
+- Typing quickly could show results for an earlier search; each new search now cancels the previous one.
+- "No results" was shown as an error, and errors from the Logseq CLI showed as "[object Object]".
+- Changing graph cleared the results but left the old text in the search bar.
+
+**Changed:**
+- Results are ranked: exact match, then names starting with the search text, then the rest.
+- The Logseq CLI path preference accepts `~`.
+- Updated to `@raycast/api` 2.x, removed the unused `@raycast/utils`, added the missing `eslint.config.js` so `ray lint` works.
+- Documented installing into Tinycast.
 
 ### v1.2.1 (2026-06-12)
 

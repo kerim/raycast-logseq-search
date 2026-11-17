@@ -8,7 +8,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 type ExtensionPreferences = {
-  /** Default Graph Name (Optional) - Default graph name - you can also select from the dropdown in the search interface */
+  /** Default Graph Name (Optional) - Graph to use the first time; after that, the graph you last picked in the dropdown is remembered */
   "graphName"?: string,
   /** Logseq CLI Path - Full path to the bundled logseq binary (default: ~/.local/bin/logseq) */
   "logseqPath": string,
