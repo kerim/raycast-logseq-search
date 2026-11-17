@@ -1,37 +1,31 @@
-# Logseq Search - Raycast Extension
+# Logseq Search
 
-Search your Logseq DB graphs directly from Raycast.
+Search your Logseq DB graphs from your launcher.
 
-![Raycast](https://img.shields.io/badge/Raycast-Extension-red)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
+This is a Raycast-format extension. It runs in any launcher that can run Raycast extensions, such as [Raycast](https://www.raycast.com/), [Tinycast](https://github.com/abue-ammar/tinycast) or [SuperCmd](https://github.com/SuperCmdLabs/SuperCmd).
+
+![Raycast extension](https://img.shields.io/badge/Raycast-Extension-red)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ## Features
 
-- 🔍 **Real-time search** - Search as you type with intelligent debouncing
-- 📊 **Graph selector** - Automatic detection and dropdown selection of available graphs
-- 💾 **Remembers selection** - Your last selected graph is saved between sessions
-- 🚀 **Fast** - Direct CLI integration with Logseq
+- 🔍 **Real-time search** - Results update as you type
+- 📊 **Graph selector** - Pick any of your graphs from a dropdown
+- 💾 **Remembers selection** - Your last selected graph is kept between sessions
+- 🚀 **No server to run** - Talks to the Logseq CLI directly
 - 🔗 **Deep linking** - Open pages directly in Logseq
 - 📋 **Quick actions** - Copy page links and titles
-- ⚡ **No Logseq Desktop required** - Works with Logseq CLI and DB graphs
-
-## Screenshots
-
-![Search Interface](https://via.placeholder.com/800x450?text=Search+Interface)
-*Search interface with graph selector dropdown*
 
 ## Prerequisites
 
-### Required
+1. **A launcher that runs Raycast extensions** - for example Raycast, Tinycast or SuperCmd.
 
-1. **[Raycast](https://www.raycast.com/)** - Download and install Raycast
+2. **Logseq desktop app** - It includes the `logseq` command-line tool this extension uses, usually at `~/.local/bin/logseq` (if yours is somewhere else, set **Logseq CLI Path** in the extension's preferences). Logseq doesn't need to be open for searching; it is only needed to open a result.
 
-2. **Logseq CLI** - The extension shells out to the bundled `logseq` binary at `~/.local/bin/logseq` (configurable via the Logseq CLI Path preference)
+3. **A Logseq DB graph** - The extension works with Logseq DB (database) graphs only.
 
-3. **Logseq DB Graph** - The extension works with Logseq DB (database) graphs only
-
-   Verify your graphs:
+   Check that the CLI can see your graphs:
    ```bash
    logseq graph list --output json
    ```
@@ -40,80 +34,60 @@ Search your Logseq DB graphs directly from Raycast.
 
 ### Tinycast
 
-Tinycast runs Raycast extensions natively and has no "reload extension" command, so install a local build by copying it in:
+Tinycast can install the extension straight from GitHub; you don't need to download or build anything yourself.
 
-```bash
-npm install
-npx ray build -e dist -o build
-mkdir -p ~/Library/Application\ Support/com.abueammar.tinycast/extensions/logseq-search
-cp -R build/assets build/package.json build/search-logseq.js ~/Library/Application\ Support/com.abueammar.tinycast/extensions/logseq-search/
-```
+1. In Tinycast, choose **Install from GitHub**
+2. Enter `kerim/raycast-logseq-search`
 
-Then quit and reopen Tinycast.
+Tinycast downloads and builds it for you. To update later, install from GitHub again.
 
-### Option 1: Install from Source (Raycast)
+### Raycast
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/kerim/raycast-logseq-search.git
-   cd raycast-logseq-search
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Build the extension:
-   ```bash
-   npm run build
-   ```
-
-4. Import in Raycast:
-   - Open Raycast Settings (⌘,)
-   - Go to Extensions tab
-   - Click "+" → "Add Local Extension"
-   - Select the `raycast-logseq-search` folder
-   - Click "Add"
-
-### Option 2: Development Mode
-
-For development or testing:
+First build the extension:
 
 ```bash
 git clone https://github.com/kerim/raycast-logseq-search.git
 cd raycast-logseq-search
 npm install
-npm run dev
+npm run build
 ```
 
-This opens Raycast with the extension loaded in development mode.
+Then:
+
+1. Open Raycast Settings (⌘,) and go to the Extensions tab
+2. Click "+" → "Add Local Extension"
+3. Select the `raycast-logseq-search` folder
+
+For development, `npm run dev` opens Raycast with the extension loaded and reloads it as you edit.
+
+### Other launchers (SuperCmd and others)
+
+If your launcher can install from GitHub, give it `kerim/raycast-logseq-search`. Otherwise, build the extension as in the Raycast steps and use your launcher's option for adding a local Raycast extension. See your launcher's documentation for the exact steps.
+
+### Trying a local change in Tinycast
+
+Tinycast has no "reload extension" command. To test changes you haven't pushed to GitHub, build into a folder, copy it into Tinycast's extensions folder, then quit and reopen Tinycast:
+
+```bash
+npx ray build -e dist -o build
+mkdir -p ~/Library/Application\ Support/com.abueammar.tinycast/extensions/logseq-search
+cp -R build/assets build/package.json build/search-logseq.js ~/Library/Application\ Support/com.abueammar.tinycast/extensions/logseq-search/
+```
 
 ## Usage
 
-### First Time Setup
-
-1. **Open Raycast** (⌘ Space)
-
-2. **Search for "Search Logseq"**
-
-3. **Select your graph** from the dropdown (top-right)
-
-4. **Start searching!** Your graph selection will be remembered
-
-### Daily Use
-
-1. Open Raycast (⌘ Space)
-2. Type "Search Logseq"
-3. Start typing your search query
-4. Press Enter to open in Logseq
+1. Open your launcher and run **Search Logseq**
+2. Pick a graph from the dropdown (top-right); it is remembered next time
+3. Type to search page names
+4. Press Enter to open the page in Logseq
 
 ### Keyboard Shortcuts
 
 - **Enter** - Open page in Logseq
 - **⌘ C** - Copy page link to clipboard
 - **⌘ ⇧ C** - Copy page title to clipboard
-- **⌘ ,** - Open extension preferences
+
+"Open Extension Preferences" is in the action panel (⌘ K).
 
 ## Configuration
 
@@ -123,7 +97,7 @@ The extension has minimal configuration needed. All settings are optional:
 - **Logseq CLI Path** - Full path to the bundled logseq binary (default: `~/.local/bin/logseq`)
 - **Max Results** - Maximum search results to display (default: `20`)
 
-Access preferences: Raycast → Extensions → Logseq Search → Configure
+Open preferences from the action panel (⌘ K → Open Extension Preferences) or from your launcher's extension settings.
 
 ## Dependencies
 
@@ -139,7 +113,7 @@ Access preferences: Raycast → Extensions → Logseq Search → Configure
 
 ```
 ┌─────────────┐         ┌──────────────────┐         ┌─────────────────┐
-│   Raycast   │ ◄─────► │   This Extension │ ◄─────► │   Logseq CLI    │
+│  Launcher   │ ◄─────► │   This Extension │ ◄─────► │   Logseq CLI    │
 │     UI      │  User   │   (TypeScript)   │  execFile│   DB Graphs     │
 └─────────────┘  Input  └──────────────────┘         └─────────────────┘
 ```
@@ -147,7 +121,7 @@ Access preferences: Raycast → Extensions → Logseq Search → Configure
 1. Extension runs `logseq graph list --output json` to fetch available graphs
 2. User selects graph and types search query
 3. Extension runs `logseq query --graph <g> --query <edn> --output json`
-4. Results are displayed in Raycast
+4. Results are displayed in the launcher
 5. User opens page using `logseq://` URL scheme
 
 ## CLI Commands Used
@@ -182,12 +156,12 @@ Verify the binary works:
 1. Verify graphs exist: `logseq graph list --output json`
 2. Check Logseq CLI Path in extension preferences
 
-### Extension not appearing in Raycast
+### Extension not appearing in your launcher
 
 **Solution:**
 1. Rebuild the extension: `npm run build`
-2. Restart Raycast: ⌘ Q then reopen
-3. Check Extensions tab in Raycast settings
+2. Quit and reopen the launcher
+3. Check that the extension is listed in the launcher's extension settings (for Tinycast, that the folder above contains `search-logseq.js`)
 
 ## Development
 
@@ -250,7 +224,7 @@ Contributions are welcome! Please:
 - Results are ranked: exact match, then names starting with the search text, then the rest.
 - The Logseq CLI path preference accepts `~`.
 - Updated to `@raycast/api` 2.x, removed the unused `@raycast/utils`, added the missing `eslint.config.js` so `ray lint` works.
-- Documented installing into Tinycast.
+- Documented installing into Tinycast and other launchers that run Raycast extensions.
 
 ### v1.2.1 (2026-06-12)
 
